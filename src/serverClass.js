@@ -7,7 +7,6 @@ import http from 'http';
 import socketIO from 'socket.io';
 import redisAdapter from 'socket.io-redis';
 
-import validator from './validators';
 import RedisClient from './redisClient';
 import { redis, server, socket, signal, stages } from './config';
 
@@ -53,25 +52,14 @@ export default class SignalServer {
     return new SignalServer(options);
   }
 
-  validate(message, next) {
-    validator(message)
-      .then(result => {
-        if (result) {
-          return next();
-        }
-        return next(new Error('invalid signal or paramaters'));
-      });
-  }
-
   createTurnConnection() {
     try {
       turnLog('CREATE TURN CONNECTION');
       const accountSid = process.env.TWILIO;
-      const authToken = process.env.TWILIO_TOKEN;
-      const ttl = process.env.TWILIO_TTL;
+      const authToken = process.env.TWILLO_TOKEN;
       const client = twilio(accountSid, authToken);
       return client.tokens
-        .create({ttl: ttl});
+        .create();
     } catch (e) {
       errorLogger.error(e);
       return null;
@@ -172,7 +160,6 @@ export default class SignalServer {
 
   ioConnection(socket) {
     try {
-      socket.use(this.validate.bind(this));
       const token = socket.handshake.query;
       const connector = token.stage || false;
       if (this.invalidHex(token.connId)) throw new Error('Connection attempted to pass an invalid connection ID');
@@ -203,10 +190,7 @@ export default class SignalServer {
 
       socket.on(signal.answerSignal, (answerData) => {
         verbose(`${signal.answerSignal} signal Recieved for ${answerData.connId} `);
-        this.io.to(answerData.connId).emit(signal.answer, {
-          data: answerData.data,
-          options: answerData.options
-        });
+        this.io.to(answerData.connId).emit(signal.answer, {data: answerData.data});
       });
 
       socket.on(signal.rtcConnected, (connId) => {

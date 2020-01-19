@@ -35,10 +35,6 @@ var _socket3 = require('socket.io-redis');
 
 var _socket4 = _interopRequireDefault(_socket3);
 
-var _validators = require('./validators');
-
-var _validators2 = _interopRequireDefault(_validators);
-
 var _redisClient = require('./redisClient');
 
 var _redisClient2 = _interopRequireDefault(_redisClient);
@@ -93,25 +89,14 @@ var SignalServer = function () {
   }
 
   _createClass(SignalServer, [{
-    key: 'validate',
-    value: function validate(message, next) {
-      (0, _validators2.default)(message).then(function (result) {
-        if (result) {
-          return next();
-        }
-        return next(new Error('invalid signal or paramaters'));
-      });
-    }
-  }, {
     key: 'createTurnConnection',
     value: function createTurnConnection() {
       try {
         turnLog('CREATE TURN CONNECTION');
         var accountSid = process.env.TWILIO;
-        var authToken = process.env.TWILIO_TOKEN;
-        var ttl = process.env.TWILIO_TTL;
+        var authToken = process.env.TWILLO_TOKEN;
         var client = (0, _twilio2.default)(accountSid, authToken);
-        return client.tokens.create({ ttl: ttl });
+        return client.tokens.create();
       } catch (e) {
         errorLogger.error(e);
         return null;
@@ -214,7 +199,6 @@ var SignalServer = function () {
       var _this4 = this;
 
       try {
-        socket.use(this.validate.bind(this));
         var token = socket.handshake.query;
         var connector = token.stage || false;
         if (this.invalidHex(token.connId)) throw new Error('Connection attempted to pass an invalid connection ID');
@@ -245,10 +229,7 @@ var SignalServer = function () {
 
         socket.on(_config.signal.answerSignal, function (answerData) {
           verbose(_config.signal.answerSignal + ' signal Recieved for ' + answerData.connId + ' ');
-          _this4.io.to(answerData.connId).emit(_config.signal.answer, {
-            data: answerData.data,
-            options: answerData.options
-          });
+          _this4.io.to(answerData.connId).emit(_config.signal.answer, { data: answerData.data });
         });
 
         socket.on(_config.signal.rtcConnected, function (connId) {
